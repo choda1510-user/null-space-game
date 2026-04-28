@@ -1,3 +1,6 @@
+use std::collections::HashMap;
+
+use null_space::GameCalender;
 use ratatui::crossterm::event::KeyCode;
 
 use crate::random::Random;
@@ -10,6 +13,7 @@ pub struct App<'a>{
     pub select_item: usize,
     pub select_items: Vec<&'a str>,
     pub is_exit: bool,
+    pub game: Option<Game>,
 }
 pub enum AppState {
     MainScreen,
@@ -31,6 +35,7 @@ impl<'a> App<'a> {
             select_item: 0,
             select_items: vec!["start", "exit"],
             is_exit: false,
+            game: None
         }
     }
     pub fn update(&mut self) {
@@ -57,6 +62,9 @@ impl<'a> App<'a> {
                         match self.select_item {
                             0 => {
                                 self.state = AppState::Playing;
+                                if let None = self.game {
+                                    self.game = Some(Game::new())
+                                }
                             }
                             1 => {
                                 self.is_exit = true;
@@ -74,6 +82,7 @@ impl<'a> App<'a> {
                 match key {
                     KeyCode::Char('q') | KeyCode::Esc => {
                         self.state = AppState::MainScreen;
+                        self.game = None;
                     }
                     _ => {
                         self.update();
@@ -82,4 +91,40 @@ impl<'a> App<'a> {
             }
         }
     }
+}
+
+pub struct Game {
+    pub time: GameCalender,
+    pub state: GameState,
+
+}
+pub enum GameState {
+    Infomation,
+    Production,
+    PowerSavingMode,
+}
+impl Game {
+    pub fn new() -> Game {
+        Game {
+            time: GameCalender::new(),
+            state: GameState::Infomation,
+        }
+    }
+}
+pub struct SpaceShip {
+    power: u32,
+    items: HashMap<String, Item>,
+    resources: HashMap<String, Resource>,
+}
+pub struct Item {
+    name: String,
+    amount: i64,
+    weight: u64,
+}
+pub struct Resource {
+    name: String,
+    amount: f64,
+}
+pub struct Recipe {
+    name: String,
 }
