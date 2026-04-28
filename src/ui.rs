@@ -1,9 +1,21 @@
 use ratatui::{
-    Frame, 
+    Frame,
     layout::{
-        Alignment, Constraint, Layout, Rect
-    }, 
-    widgets::{Block, List, Paragraph}
+        Alignment,
+        Constraint,
+        Layout,
+        Rect
+    },
+    style::{
+        Color,
+        Modifier
+    },
+    widgets::{
+        Block,
+        List,
+        ListState,
+        Paragraph
+    }
 };
 
 use crate::app::{
@@ -55,15 +67,16 @@ fn render_center(frame: &mut Frame, app: &App, area: Rect) {
     render_select(frame, app, select);
 }
 fn render_head(frame: &mut Frame, app: &App, area: Rect) {
-    let title = Paragraph::new("Null Space").centered();
+    let title = Paragraph::new(app.title).centered();
     frame.render_widget(title, area);
 }
 fn render_select(frame: &mut Frame, app: &App, area: Rect) {
-    let list = List::new([
-        "start",
-        "exit"
-    ]);
-    frame.render_widget(list, area);
+    let list = List::new(app.select_items.clone())
+        .style(Color::White)
+        .highlight_style(Modifier::REVERSED)
+        .highlight_symbol("> ");
+    let mut list_state = ListState::default().with_selected(Some(app.select_item));
+    frame.render_stateful_widget(list, area, &mut list_state);
 }
 fn render_right(frame: &mut Frame, app: &App, area: Rect) {
 

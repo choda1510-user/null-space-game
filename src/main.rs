@@ -79,7 +79,9 @@ where io::Error: From<B::Error> {
                             panic!("error occur: {:?}", error);
                         }
                     } {
-                        app.input(key.code);
+                        if key.is_press() {
+                            app.input(key.code);
+                        }
                     }
                 }
             }

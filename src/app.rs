@@ -7,6 +7,8 @@ pub struct App<'a>{
     pub num: u32,
     pub state: AppState,
     pub title: &'a str,
+    pub select_item: usize,
+    pub select_items: Vec<&'a str>,
     pub is_exit: bool,
 }
 pub enum AppState {
@@ -26,6 +28,8 @@ impl<'a> App<'a> {
             num: 0,
             state: AppState::MainScreen,
             title: "Null Space",
+            select_item: 0,
+            select_items: vec!["start", "exit"],
             is_exit: false,
         }
     }
@@ -33,12 +37,48 @@ impl<'a> App<'a> {
         self.num = self.rando.rand();
     }
     pub fn input(&mut self, key: KeyCode) {
-        match key {
-            KeyCode::Char('q') | KeyCode::Esc => {
-                self.is_exit = true;
+        match self.state {
+            AppState::MainScreen => {
+                match key {
+                    KeyCode::Char('q') | KeyCode::Esc => {
+                        self.is_exit = true;
+                    }
+                    KeyCode::Up => {
+                        if self.select_item > 0 {
+                            self.select_item -= 1;
+                        }
+                    }
+                    KeyCode::Down => {
+                        if self.select_item < 1 {
+                            self.select_item += 1;
+                        }
+                    }
+                    KeyCode::Enter => {
+                        match self.select_item {
+                            0 => {
+                                self.state = AppState::Playing;
+                            }
+                            1 => {
+                                self.is_exit = true;
+                            }
+                            _ => {
+
+                            }
+                        }
+                    }
+                    _ => {
+                    }
+                }
             }
-            _ => {
-                self.update();
+            AppState::Playing => {
+                match key {
+                    KeyCode::Char('q') | KeyCode::Esc => {
+                        self.state = AppState::MainScreen;
+                    }
+                    _ => {
+                        self.update();
+                    }
+                }
             }
         }
     }
