@@ -1,14 +1,23 @@
-use null_space::year_to_str;
+use std::ops::Add;
+
+use null_space::GameCalender;
 use ratatui::{
-    Frame, layout::{
+    Frame,
+    layout::{
         Alignment,
         Constraint,
         Layout,
         Rect
-    }, style::{
+    },
+    style::{
         Color,
         Modifier
-    }, text::{Line, Span, Text}, widgets::{
+    },
+    text::{
+        Line,
+        Span
+    },
+    widgets::{
         Block,
         List,
         ListState,
@@ -85,7 +94,7 @@ fn render_header(frame: &mut Frame, app: &App, area: Rect) {
         .title_alignment(Alignment::Center);
     if let Some(game) = &app.game {
         let paragraph = Paragraph::new(Line::from(vec![
-            Span::from(year_to_str(&game.time)),
+            Span::from(fmt_year(&game.time, 4)),
             Span::from(String::from(".")),
             Span::from((game.time.month() + 1).to_string()),
             Span::from(String::from(".")),
@@ -113,4 +122,49 @@ fn render_footer(frame: &mut Frame, app: &App, area: Rect) {
     let paragraph = Paragraph::new(app.num.to_string())
         .block(block);
     frame.render_widget(paragraph, area);
+}
+pub fn fmt_year(cal: &GameCalender, size: usize) -> String {
+    if cal.year().len() <= size {
+        year_to_str(cal)
+    } else {
+        year_to_e_str(cal, 3)
+    }
+}
+pub fn year_to_str(cal: &GameCalender) -> String {
+    let year_clone = cal.year().clone();
+    match year_clone
+            .chunks(3)
+            .rev()
+            .map(|n| match n.iter()
+                .rev()
+                .map(|&u| u.to_string())
+                .reduce(|s1, s2| s1.add(&s2)) {
+                    Some(result) => {
+                        result
+                    },
+                    None => {
+                        String::from("")
+                    }
+                })
+            .reduce(|s1, s2| s1.add(",").add(&s2)) {
+        Some(result) => {
+            result
+        },
+        None => {
+            String::from("0")
+        }
+    }
+}
+fn year_to_e_str(cal: &GameCalender, significand_size: usize) -> String {
+    let first = cal.year()[cal.year().len() - 1].to_string();
+    let mut result = first.add(".");
+    for i in 1..cal.year().len() {
+        if i > significand_size {
+            break;
+        }
+        result = result.add(&cal.year()[cal.year().len() - 1 -i].to_string());
+    }
+    result = result.add("e");
+    result = result.add(&(cal.year().len() - 1).to_string());
+    result
 }

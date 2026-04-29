@@ -1,4 +1,3 @@
-use std::ops::Add;
 pub struct GameCalender {
     year: Vec<u8>,
     time: u64,
@@ -104,18 +103,11 @@ impl GameCalender {
     pub fn add_month(&mut self, month: u64) {
         self.add_day(month * 30);
     }
+    pub fn year(&self) -> &Vec<u8> {
+        &self.year
+    }
     pub fn increase_year(&mut self) {
         self.add_years(vec![1]);
-    }
-}
-pub fn year_to_str(cal: &GameCalender) -> String{
-    match cal.year.iter().map(|&num| num.to_string()).rev().reduce(|s1, s2| s1.add(&s2)) {
-        Some(result) => {
-            result
-        },
-        None => {
-            String::from("0")
-        }
     }
 }
 fn u64_to_u8_arr(num: u64) -> Vec<u8> {
@@ -130,10 +122,77 @@ fn u64_to_u8_arr(num: u64) -> Vec<u8> {
     result.push(n as u8);
     result
 }
+pub trait GameYear {
+    fn lt(&self, other: &Self) -> bool;
+    fn le(&self, other: &Self) -> bool;
+    fn gt(&self, other: &Self) -> bool;
+    fn ge(&self, other: &Self) -> bool;
+}
+impl GameYear for Vec<u8> {
+    fn lt(&self, other: &Self) -> bool {
+        if self.len() > other.len() {
+            return false;
+        }
+        let mut than = false;
+        for i in 0..self.len() {
+            if self[i] < other[i] {
+                than = true;
+            }
+            if self[i] > other[i] {
+                than = false;
+            }
+        }
+        than
+    }
+    fn le(&self, other: &Self) -> bool {
+        if self.len() > other.len() {
+            return false;
+        }
+        let mut than = true;
+        for i in 0..self.len() {
+            if self[i] < other[i] {
+                than = true;
+            }
+            if self[i] > other[i] {
+                than = false;
+            }
+        }
+        than
+    }
+    fn gt(&self, other: &Self) -> bool {
+        if other.len() > self.len() {
+            return false;
+        }
+        let mut than = false;
+        for i in 0..other.len() {
+            if other[i] < self[i] {
+                than = true;
+            }
+            if other[i] > self[i] {
+                than = false;
+            }
+        }
+        than
+    }
+    fn ge(&self, other: &Self) -> bool {
+        if other.len() > self.len() {
+            return false;
+        }
+        let mut than = true;
+        for i in 0..other.len() {
+            if other[i] < self[i] {
+                than = true;
+            }
+            if other[i] > self[i] {
+                than = false;
+            }
+        }
+        than
+    }
+}
 #[cfg(test)]
 mod test {
     use crate::GameCalender;
-    use crate::year_to_str;
 
     #[test]
     fn add_tick_to_millis() {
@@ -233,7 +292,7 @@ mod test {
     #[test]
     fn zero_year_to_string() {
         let cal = GameCalender::new();
-        let year = year_to_str(&cal);
+        let year = cal.year()[0].to_string();
 
         assert_eq!(year, "0");
     }
@@ -241,7 +300,7 @@ mod test {
     fn add_one_year_tick_to_string() {
         let mut cal = GameCalender::new();
         cal.add_years(vec![1]);
-        let year = year_to_str(&cal);
+        let year = cal.year()[0].to_string();
 
         assert_eq!(year, "1");
     }
@@ -250,7 +309,7 @@ mod test {
         let mut cal = GameCalender::new();
         cal.add_years(vec![1]);
         cal.add_years(vec![1]);
-        let year = year_to_str(&cal);
+        let year = cal.year()[0].to_string();
 
         assert_eq!(year, "2");
     }
@@ -261,7 +320,7 @@ mod test {
         cal.add_years(vec![1]);
         cal.add_month(7);
         cal.add_month(5);
-        let year = year_to_str(&cal);
+        let year = cal.year()[0].to_string();
         let month = cal.month();
 
         assert_eq!(year, "3");

@@ -1,4 +1,4 @@
-use std::{io, time::{Duration, SystemTime}};
+use std::{io, time::{Duration, Instant}};
 use ratatui::{
     Terminal,
     crossterm::{
@@ -30,15 +30,16 @@ fn main() {
     if let Err(error) = enable_raw_mode() {
         panic!("error occur: {:?}", error);
     };
-    let mut stderr = io::stderr();
+    // let mut stderr = io::stderr();
+    let mut stdout = io::stdout();
     if let Err(error) = execute!(
-        stderr,
+        stdout,
         EnterAlternateScreen,
         EnableMouseCapture
     ) {
         panic!("error occur: {:?}", error);
     };
-    let backend = CrosstermBackend::new(stderr);
+    let backend = CrosstermBackend::new(stdout);
     let mut terminal = match Terminal::new(backend) {
         Ok(terminal) => terminal,
         Err(error) => {
@@ -62,7 +63,7 @@ fn main() {
 }
 fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> Result<(), io::Error>
 where io::Error: From<B::Error> {
-    let mut start_with = SystemTime::now();
+    let mut start_with = Instant::now();
     loop {
         if let Err(error) = terminal.draw(|frame| {
             render(frame, app);
@@ -90,27 +91,22 @@ where io::Error: From<B::Error> {
                 panic!("error occur: {:?}", error);
             }
         }
-        let now = SystemTime::now();
-        match now.duration_since(start_with) {
-            Ok(since) => {
-                if since.as_millis() > 1000 / 60 {
-                    if let Some(game) = &mut app.game {
-                        game.time.increase_year();//game.time.add_millis(since.as_millis() as u64);
-                        match start_with.checked_add(since) {
-                            Some(result) => {
-                                start_with = result;
-                            }
-                            None => {
-                                panic!("invalide date time");
-                            }
+        let now = Instant::now();
+        let since = now.duration_since(start_with);
+            if since.as_millis() > 1000 / 60 {
+                if let Some(game) = &mut app.game {
+                    game.time.increase_year();//game.time.add_millis(since.as_millis() as u64);
+                    match start_with.checked_add(since) {
+                        Some(result) => {
+                            start_with = result;
+                        }
+                        None => {
+                            panic!("invalide date time");
                         }
                     }
                 }
-            },
-            Err(error) => {
-                panic!("error occur: {:?}", error);
             }
-        }
+        
         if app.is_exit {
             break;
         }
