@@ -1,3 +1,5 @@
+use std::ops::Add;
+const YEAR: [u8; 8] = [0,0x60,0xf1,0x3d,0x07,0,0,0];
 pub struct GameCalender {
     // pub year_exponent: u64,
     // pub year_significand: u64,
@@ -24,20 +26,6 @@ impl GameCalender {
             ]
         }
     }
-    pub fn add_tick(&mut self, amount: u8) {
-        let mut result: u8;
-        let mut is_overflowed: bool;
-        (result, is_overflowed) = self.tick[0].overflowing_add(amount);
-        self.tick[0] = result;
-        for i in 1..self.tick.len() {
-            if is_overflowed {
-                (result, is_overflowed) = self.tick[i].overflowing_add(1);
-                self.tick[i] = result;
-            } else {
-                break;
-            }
-        }
-    }
     pub fn millis(&self) -> u64 {
         self.moduler(1000)
     }
@@ -54,33 +42,7 @@ impl GameCalender {
         result
     }
     pub fn add_millis(&mut self, millis: u64) {
-        let bytes = millis.to_le_bytes();
-        let mut result: u8;
-        let mut is_overflowed: bool;
-        let mut prev_is_overflowed: bool = false;
-        for i in 0..bytes.len() {
-            (result, is_overflowed) = self.tick[i].overflowing_add(bytes[i]);
-            if is_overflowed {
-                if prev_is_overflowed {
-                    result = result + 1;
-                }
-                prev_is_overflowed = true;
-            } else {
-                if prev_is_overflowed {
-                    (result, prev_is_overflowed) = result.overflowing_add(1);
-                }
-            }
-            self.tick[i] = result;
-        }
-        is_overflowed = prev_is_overflowed;
-        for i in 4..self.tick.len() {
-            if is_overflowed {
-                (result, is_overflowed) = self.tick[i].overflowing_add(1);
-                self.tick[i] = result;
-            } else {
-                break;
-            }
-        }
+        self.add_tick(millis.to_le_bytes().to_vec());
     }
     pub fn second(&self) -> u64 {
         self.moduler(60 * 1000) / 1000
@@ -115,10 +77,139 @@ impl GameCalender {
     pub fn get_ticks(&self) -> &[u8; 16*4]{
         &self.tick
     }
+    pub fn increase_year(&mut self) {
+        self.add_tick(YEAR.clone().to_vec());
+    }
+    pub fn add_tick(&mut self, tick: Vec<u8>) {
+        let mut byte;
+        let mut is_overflowed;
+        let mut prev_overflowed = false;
+        if tick.len() > self.tick.len() {
+            panic!("error, because year is too big.");
+        } else {
+            for i in 0..tick.len() {
+                (byte, is_overflowed) = self.tick[i].overflowing_add(tick[i]);
+                if prev_overflowed {
+                    if is_overflowed {
+                        byte = byte + 1;
+                    } else {
+                        (byte, is_overflowed) = byte.overflowing_add(1);
+                    }
+                    prev_overflowed = false;
+                }
+                if is_overflowed {
+                    prev_overflowed = true;
+                }
+                self.tick[i] = byte;
+            }
+            is_overflowed = prev_overflowed;
+            for i in tick.len()..self.tick.len() {
+                if is_overflowed {
+                    (byte, is_overflowed) = self.tick[i].overflowing_add(1);
+                    self.tick[i] = byte;
+                } else {
+                    break;
+                }
+            }
+        }
+    }
+}
+pub fn year_to_str(cal: &GameCalender) -> String{
+    let ticks = cal.tick.clone().to_vec();
+    let mut tick_count: Vec<u8> = Vec::new();
+    for _ in 0..ticks.len() {
+        tick_count.push(0);
+    }
+    let year_period = 12 as u64 * 30 as u64 * 24 as u64 * 60 as u64 * 60 as u64 * 1000 as u64;
+    let year_arr = year_period.to_le_bytes().to_vec();
+    let mut year_cells = vec![];
+    loop {
+        add_bytes(&mut tick_count, &year_arr);
+        if left_small_than_right(&tick_count, &ticks) {
+            add_year_cells(&mut year_cells);
+        } else {
+            break match year_cells.iter()
+                .map(|&num| num.to_string())
+                .rev()
+                .reduce(|str1, str2| str1.add(&str2)) {
+                    Some(result) => result,
+                    None => String::from("0")
+                }
+        }
+    }
+}
+fn add_year_cells(year_cells: &mut Vec<u8>) {
+    if year_cells.len() == 0 {
+        year_cells.push(1);
+        return;
+    }
+    let mut is_overflowed = true;
+
+    for i in 0..year_cells.len() {
+        let cell = year_cells[i] + if is_overflowed { 1 } else { 0 };
+        if cell >= 10 {
+            year_cells[i] = 0;
+            is_overflowed = true;
+        } else {
+            year_cells[i] += 1;
+            is_overflowed = false;
+            break;
+        }
+    }
+    if is_overflowed {
+        year_cells.push(1);
+    }
+}
+fn add_bytes(left: &mut Vec<u8>, right: &Vec<u8>) {
+    let mut byte;
+    let mut is_overflowed;
+    let mut prev_overflowed = false;
+    for i in 0..right.len() {
+        (byte, is_overflowed) = left[i].overflowing_add(right[i]);
+        if prev_overflowed {
+            if is_overflowed {
+                byte = byte + 1;
+            } else {
+                (byte, is_overflowed) = byte.overflowing_add(1);
+            }
+            prev_overflowed = false;
+        }
+        if is_overflowed {
+            prev_overflowed = true;
+        }
+        left[i] = byte;
+    }
+    is_overflowed = prev_overflowed;
+    for i in right.len()..left.len() {
+        if is_overflowed {
+            (byte, is_overflowed) = left[i].overflowing_add(1);
+            left[i] = byte;
+        } else {
+            break;
+        }
+    }
+}
+fn left_small_than_right(left: &Vec<u8>, right: &Vec<u8>) -> bool {
+    if left.len() > right.len() {
+        return false;
+    }
+    let mut than = true;
+    for i in 0..left.len() {
+        if left[i] < right[i] {
+            than = true;
+        }
+        if left[i] > right[i] {
+            than = false;
+        }
+    }
+    than
 }
 #[cfg(test)]
 mod test {
     use crate::GameCalender;
+    use crate::add_year_cells;
+    use crate::left_small_than_right;
+    use crate::year_to_str;
 
     #[test]
     fn add_tick_to_millis() {
@@ -214,5 +305,72 @@ mod test {
         let overflow_added_month = cal.month();
 
         assert_eq!(overflow_added_month, 2);
+    }
+    #[test]
+    fn left_small_than_right_test() {
+        assert_eq!(left_small_than_right(&vec![0,0], &vec![0,1]), true);
+        assert_eq!(left_small_than_right(&vec![0,0], &vec![1,0]), true);
+        assert_eq!(left_small_than_right(&vec![0,1], &vec![1,1]), true);
+        assert_eq!(left_small_than_right(&vec![0,1], &vec![0,0]), false);
+        assert_eq!(left_small_than_right(&vec![0,0], &vec![0,0]), true);
+        assert_eq!(left_small_than_right(&vec![0,1], &vec![0,0]), false);
+
+        assert_eq!(left_small_than_right(&vec![0,255,0], &vec![0,1,1]), true);
+        assert_eq!(left_small_than_right(&vec![0,0,3], &vec![1,0,3]), true);
+        assert_eq!(left_small_than_right(&vec![4,0,10], &vec![0,1,10]), true);
+        assert_eq!(left_small_than_right(&vec![0,1,1], &vec![0,255,0]), false);
+        assert_eq!(left_small_than_right(&vec![1,0,3], &vec![0,0,3]), false);
+        assert_eq!(left_small_than_right(&vec![0,1,10], &vec![4,0,10]), false);
+    }
+    #[test]
+    fn add_year_cell_test() {
+        let mut year_cells: Vec<u8> = vec![];
+        assert_eq!(year_cells.len(), 0);
+        add_year_cells(&mut year_cells);
+        assert_eq!(year_cells[0], 1);
+        add_year_cells(&mut year_cells);
+        assert_eq!(year_cells[0], 2);
+        for _ in 0..10 { add_year_cells(&mut year_cells); }
+        assert_eq!(year_cells[1], 1); assert_eq!(year_cells[0], 2);
+        for _ in 0..10 { add_year_cells(&mut year_cells); }
+        add_year_cells(&mut year_cells);
+        assert_eq!(year_cells[1], 2); assert_eq!(year_cells[0], 3);
+    }
+    #[test]
+    fn zero_year_to_string() {
+        let cal = GameCalender::new();
+        let year = year_to_str(&cal);
+
+        assert_eq!(year, "0");
+    }
+    #[test]
+    fn add_one_year_tick_to_string() {
+        let mut cal = GameCalender::new();
+        cal.add_tick(vec![0,0x60,0xf1,0x3d,0x07,0,0,0]);
+        let year = year_to_str(&cal);
+
+        assert_eq!(year, "1");
+    }
+    #[test]
+    fn add_two_year_tick_to_string() {
+        let mut cal = GameCalender::new();
+        cal.add_tick(vec![0,0x60,0xf1,0x3d,0x07,0,0,0]);
+        cal.add_tick(vec![0,0x60,0xf1,0x3d,0x07,0,0,0]);
+        let year = year_to_str(&cal);
+
+        assert_eq!(year, "2");
+    }
+    #[test]
+    fn add_tick_to_string() {
+        let mut cal = GameCalender::new();
+        cal.add_tick(vec![0,0x60,0xf1,0x3d,0x07,0,0,0]);
+        cal.add_tick(vec![0,0x60,0xf1,0x3d,0x07,0,0,0]);
+        cal.add_month(7);
+        cal.add_month(5);
+        let year = year_to_str(&cal);
+        let month = cal.month();
+
+        assert_eq!(year, "3");
+        assert_eq!(month, 0);
     }
 }
