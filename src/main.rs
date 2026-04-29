@@ -1,4 +1,4 @@
-use std::{io, time::Duration};
+use std::{io, time::{Duration, SystemTime}};
 use ratatui::{
     Terminal,
     crossterm::{
@@ -62,6 +62,7 @@ fn main() {
 }
 fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> Result<(), io::Error>
 where io::Error: From<B::Error> {
+    let mut start_with = SystemTime::now();
     loop {
         if let Err(error) = terminal.draw(|frame| {
             render(frame, app);
@@ -85,6 +86,27 @@ where io::Error: From<B::Error> {
                     }
                 }
             }
+            Err(error) => {
+                panic!("error occur: {:?}", error);
+            }
+        }
+        let now = SystemTime::now();
+        match now.duration_since(start_with) {
+            Ok(since) => {
+                if since.as_millis() > 1000 / 60 {
+                    if let Some(game) = &mut app.game {
+                        game.time.increase_year();//game.time.add_millis(since.as_millis() as u64);
+                        match start_with.checked_add(since) {
+                            Some(result) => {
+                                start_with = result;
+                            }
+                            None => {
+                                panic!("invalide date time");
+                            }
+                        }
+                    }
+                }
+            },
             Err(error) => {
                 panic!("error occur: {:?}", error);
             }

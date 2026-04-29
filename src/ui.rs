@@ -1,16 +1,14 @@
+use null_space::year_to_str;
 use ratatui::{
-    Frame,
-    layout::{
+    Frame, layout::{
         Alignment,
         Constraint,
         Layout,
         Rect
-    },
-    style::{
+    }, style::{
         Color,
         Modifier
-    },
-    widgets::{
+    }, text::{Line, Span, Text}, widgets::{
         Block,
         List,
         ListState,
@@ -85,7 +83,24 @@ fn render_header(frame: &mut Frame, app: &App, area: Rect) {
     let block = Block::bordered()
         .title("title")
         .title_alignment(Alignment::Center);
-    frame.render_widget(block, area);
+    if let Some(game) = &app.game {
+        let paragraph = Paragraph::new(Line::from(vec![
+            Span::from(year_to_str(&game.time)),
+            Span::from(String::from(".")),
+            Span::from((game.time.month() + 1).to_string()),
+            Span::from(String::from(".")),
+            Span::from((game.time.day() + 1).to_string()),
+            Span::from(String::from(".")),
+            Span::from(game.time.hour().to_string()),
+            Span::from(String::from(":")),
+            Span::from(game.time.minute().to_string()),
+            Span::from(String::from(":")),
+            Span::from(game.time.second().to_string())
+        ])).block(block);
+        frame.render_widget(paragraph, area);
+    } else {
+        frame.render_widget(block, area);
+    }
 }
 fn render_main(frame: &mut Frame, app: &App, area: Rect) {
     let block = Block::bordered();
