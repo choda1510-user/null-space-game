@@ -1,4 +1,4 @@
-use std::ops::Add;
+use std::ops::{Add};
 
 use null_space::GameCalender;
 use ratatui::{
@@ -94,21 +94,28 @@ fn render_header(frame: &mut Frame, app: &App, area: Rect) {
         .title_alignment(Alignment::Center);
     if let Some(game) = &app.game {
         let paragraph = Paragraph::new(Line::from(vec![
-            Span::from(fmt_year(&game.time, 4)),
+            Span::from(fmt_year(&game.time, 12)),
             Span::from(String::from(".")),
-            Span::from((game.time.month() + 1).to_string()),
+            Span::from(fmt_num(game.time.month() + 1)),
             Span::from(String::from(".")),
-            Span::from((game.time.day() + 1).to_string()),
+            Span::from(fmt_num(game.time.day() + 1)),
             Span::from(String::from(".")),
-            Span::from(game.time.hour().to_string()),
+            Span::from(fmt_num(game.time.hour())),
             Span::from(String::from(":")),
-            Span::from(game.time.minute().to_string()),
+            Span::from(fmt_num(game.time.minute())),
             Span::from(String::from(":")),
-            Span::from(game.time.second().to_string())
+            Span::from(fmt_num(game.time.second()))
         ])).block(block);
         frame.render_widget(paragraph, area);
     } else {
         frame.render_widget(block, area);
+    }
+}
+fn fmt_num(num: u64) -> String {
+    if num / 10 > 0 {
+        num.to_string()
+    } else {
+        String::from("0").add(&num.to_string())
     }
 }
 fn render_main(frame: &mut Frame, app: &App, area: Rect) {

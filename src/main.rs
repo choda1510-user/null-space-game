@@ -68,7 +68,7 @@ where io::Error: From<B::Error> {
         if let Err(error) = terminal.draw(|frame| {
             render(frame, app);
         }) {
-            panic!("error occur: {:?}", error);
+            return Err(From::from(error));
         };
         match event::poll(Duration::from_millis(1000 / 60)) {
             Ok(polled) => {
@@ -78,7 +78,7 @@ where io::Error: From<B::Error> {
                             event
                         },
                         Err(error) => {
-                            panic!("error occur: {:?}", error);
+                            return Err(error);
                         }
                     } {
                         if key.is_press() {
@@ -88,14 +88,14 @@ where io::Error: From<B::Error> {
                 }
             }
             Err(error) => {
-                panic!("error occur: {:?}", error);
+                return Err(error);
             }
         }
         let now = Instant::now();
         let since = now.duration_since(start_with);
-            if since.as_millis() > 1000 / 60 {
+            if since.as_millis() > 0 {
                 if let Some(game) = &mut app.game {
-                    game.time.increase_year();//game.time.add_millis(since.as_millis() as u64);
+                    game.update(since.as_millis());
                     match start_with.checked_add(since) {
                         Some(result) => {
                             start_with = result;
@@ -104,6 +104,8 @@ where io::Error: From<B::Error> {
                             panic!("invalide date time");
                         }
                     }
+                } else {
+                    start_with = now;
                 }
             }
         
