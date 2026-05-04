@@ -11,23 +11,20 @@ use ratatui::{
     },
     style::{
         Color,
-        Modifier
+        Modifier, Style
     },
     text::{
         Line,
         Span
     },
     widgets::{
-        Block,
-        List,
-        ListState,
-        Paragraph
+        Block, Gauge, List, ListState, Paragraph
     }
 };
 
 use crate::app::{
     App,
-    AppState
+    AppState, GameState
 };
 
 pub fn render(frame: &mut Frame, app: &App) {
@@ -89,9 +86,18 @@ fn render_right(frame: &mut Frame, app: &App, area: Rect) {
 
 }
 fn render_header(frame: &mut Frame, app: &App, area: Rect) {
-    let block = Block::bordered()
-        .title("title")
-        .title_alignment(Alignment::Center);
+    let horizontal = Layout::horizontal([
+        Constraint::Percentage(30),
+        Constraint::Percentage(40),
+        Constraint::Percentage(30),
+    ]);
+    let [ left, center, right ] = area.layout(&horizontal);
+    render_header_left(frame, app, left);
+    render_header_center(frame, app, center);
+    render_header_right(frame, app, right);
+}
+fn render_header_left(frame: &mut Frame, app: &App, area: Rect) {
+    let block = Block::bordered();
     if let Some(game) = &app.game {
         let paragraph = Paragraph::new(Line::from(vec![
             Span::from(fmt_year(&game.time, 12)),
@@ -110,6 +116,31 @@ fn render_header(frame: &mut Frame, app: &App, area: Rect) {
     } else {
         frame.render_widget(block, area);
     }
+}
+fn render_header_center(frame: &mut Frame, app: &App, area: Rect) {
+    let block = Block::bordered().title(
+    if let Some(game) = &app.game {
+        match game.state {
+            GameState::Infomation => {
+                "Infomation"
+            }
+            GameState::Production => {
+                "Production"
+            }
+            GameState::PowerSavingMode => {
+                "Power Saving Mode"
+            }
+        }
+    } else {"title"}).title_alignment(Alignment::Center);
+    frame.render_widget(block, area);
+}
+fn render_header_right(frame: &mut Frame, app: &App, area: Rect) {
+    let block = Block::bordered();
+    let gauge = Gauge::default()
+        .block(block)
+        .gauge_style(Style::new().blue().on_black())
+        .percent(20);
+    frame.render_widget(gauge, area);
 }
 fn fmt_num(num: u64) -> String {
     if num / 10 > 0 {
