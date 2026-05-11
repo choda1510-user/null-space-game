@@ -118,6 +118,7 @@ pub struct Game {
     pub time: GameCalender,
     pub state: GameState,
     pub time_per_millis: GameCalender,
+    time_per_millis_prev: GameCalender,
     pub ended_time: GameCalender,
 }
 pub enum GameState {
@@ -132,6 +133,7 @@ impl Game {
             time: GameCalender::new(),
             state: GameState::Infomation,
             time_per_millis: GameCalender::from_time(1),
+            time_per_millis_prev: GameCalender::new(),
             ended_time: GameCalender::from_years(e_str_to_year("1.e12").unwrap()),
         }
     }
@@ -141,6 +143,7 @@ impl Game {
             time: GameCalender::new(),
             state: GameState::Infomation,
             time_per_millis: GameCalender::from_time(1),
+            time_per_millis_prev: GameCalender::new(),
             ended_time: GameCalender::from_years(e_str_to_year("1.e12").unwrap()),
         }
     }
@@ -168,7 +171,13 @@ impl Game {
         self.time_per_millis = GameCalender::from_time(1);
     }
     pub fn time_stop(&mut self) {
-        self.time_per_millis = GameCalender::new();
+        let zero: GameCalender = GameCalender::new();
+        if self.time_per_millis == zero {
+            self.time_per_millis = self.time_per_millis_prev.clone();
+        } else {
+            self.time_per_millis_prev = self.time_per_millis.clone();
+            self.time_per_millis = zero;
+        }
     }
 }
 pub struct SpaceShip {
