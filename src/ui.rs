@@ -24,7 +24,10 @@ use ratatui::{
 
 use crate::app::{
     App,
-    AppState, GameState
+    AppState
+};
+use crate::game::{
+    GameState
 };
 
 pub fn render(frame: &mut Frame, app: &App) {
@@ -40,9 +43,9 @@ fn render_container(frame: &mut Frame, app: &App, area: Rect) {
             ]);
             let [left, center, right] = area.layout(&horizontal);
 
-            render_left(frame, app, left);
+            _render_left(frame, app, left);
             render_center(frame, app, center);
-            render_right(frame, app, right);
+            _render_right(frame, app, right);
         },
         AppState::Playing => {
             let vertical = Layout::vertical([
@@ -57,7 +60,7 @@ fn render_container(frame: &mut Frame, app: &App, area: Rect) {
         }
     }
 }
-fn render_left(frame: &mut Frame, app: &App, area: Rect) {
+fn _render_left(_frame: &mut Frame, _app: &App, _area: Rect) {
 
 }
 fn render_center(frame: &mut Frame, app: &App, area: Rect) {
@@ -82,7 +85,7 @@ fn render_select(frame: &mut Frame, app: &App, area: Rect) {
     let mut list_state = ListState::default().with_selected(Some(app.select_item));
     frame.render_stateful_widget(list, area, &mut list_state);
 }
-fn render_right(frame: &mut Frame, app: &App, area: Rect) {
+fn _render_right(_frame: &mut Frame, _app: &App, _area: Rect) {
 
 }
 fn render_header(frame: &mut Frame, app: &App, area: Rect) {

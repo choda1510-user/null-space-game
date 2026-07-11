@@ -26,6 +26,7 @@ use crate::ui::render;
 mod app;
 mod random;
 mod ui;
+mod game;
 fn main() {
     if let Err(error) = enable_raw_mode() {
         panic!("error occur: {:?}", error);
